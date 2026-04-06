@@ -15,7 +15,8 @@ The Empathy Engine bridges the gap between text-based sentiment and expressive, 
 ✅ **Intensity Scaling**: Emotion strength affects modulation degree  
 ✅ **Web Interface**: Interactive UI with instant audio playback  
 ✅ **CLI Mode**: Command-line interface for batch processing  
-✅ **Audio Export**: Generates .wav files for each synthesis
+✅ **Audio Export**: Generates audio files (.wav locally, .mp3 on cloud)  
+✅ **Cloud Compatible**: Works on Linux servers (Render, Railway, etc.) using gTTS
 
 ## Supported Emotions & Voice Mappings
 
