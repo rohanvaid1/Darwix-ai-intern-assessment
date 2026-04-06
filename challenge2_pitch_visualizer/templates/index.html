@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Pitch Visualizer 🖼</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 150px;
+            transition: border-color 0.3s;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .result {
+            display: none;
+            margin-top: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .result.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .storyboard-img {
+            width: 100%;
+            border-radius: 10px;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .scenes-list {
+            margin-top: 20px;
+        }
+        
+        .scene-item {
+            padding: 12px;
+            background: white;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .scene-number {
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .examples {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 8px;
+        }
+        
+        .examples h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+        
+        .example-text {
+            cursor: pointer;
+            padding: 8px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 5px;
+            transition: background 0.2s;
+            font-size: 0.9em;
+        }
+        
+        .example-text:hover {
+            background: #e0e0ff;
+        }
+        
+        .download-btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #28a745;
+            width: auto;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖼 The Pitch Visualizer</h1>
+        <p class="subtitle">Transform narratives into visual storyboards</p>
+        
+        <form id="storyboardForm">
+            <div class="form-group">
+                <label for="narrative">Enter your narrative:</label>
+                <textarea id="narrative" name="narrative" 
+                    placeholder="Write your story here... For example: 'Sarah walked into the old warehouse and discovered a mysterious journal...'"></textarea>
+            </div>
+            
+            <div class="row">
+                <div class="form-group">
+                    <label for="title">Storyboard Title:</label>
+                    <input type="text" id="title" name="title" value="My Storyboard">
+                </div>
+                
+                <div class="form-group">
+                    <label for="max_scenes">Max Scenes (1-10):</label>
+                    <input type="number" id="max_scenes" name="max_scenes" min="1" max="10" value="6">
+                </div>
+            </div>
+            
+            <button type="submit">🎬 Generate Storyboard</button>
+        </form>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="color: #666;">Creating your storyboard... This may take a moment.</p>
+        </div>
+        
+        <div class="result" id="result">
+            <h2 style="color: #333; margin-bottom: 15px;">Your Storyboard</h2>
+            <div id="resultContent"></div>
+        </div>
+        
+        <div class="examples">
+            <h3>📝 Try these example narratives:</h3>
+            <div class="example-text" onclick="setExample(this)">Sarah walked into the old abandoned warehouse, her flashlight cutting through the darkness. Suddenly, she heard a noise from the corner. Behind the dusty crates, she discovered an old journal. This journal belonged to her grandmother who had disappeared 20 years ago.</div>
+            <div class="example-text" onclick="setExample(this)">The brave explorer entered the ancient temple. Golden artifacts lined the dusty shelves. A mysterious inscription caught his attention. He carefully translated the ancient text. The secret of the lost civilization was finally revealed.</div>
+            <div class="example-text" onclick="setExample(this)">The detective examined the crime scene carefully. She found a crucial piece of evidence hidden beneath the desk. The evidence pointed to an unexpected suspect. With determination, she pieced together the puzzle and made the arrest.</div>
+        </div>
+    </div>
+    
+    <script>
+        function setExample(element) {
+            document.getElementById('narrative').value = element.textContent;
+        }
+        
+        document.getElementById('storyboardForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            const submitBtn = this.querySelector('button[type="submit"]');
+            
+            // Show loading
+            submitBtn.disabled = true;
+            loading.classList.add('show');
+            result.classList.remove('show');
+            
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayResult(data);
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                loading.classList.remove('show');
+            }
+        });
+        
+        function displayResult(data) {
+            const resultContent = document.getElementById('resultContent');
+            const result = document.getElementById('result');
+            
+            let html = `
+                <h3 style="color: #667eea; margin-bottom: 10px;">${data.title}</h3>
+                <p style="margin-bottom: 15px;"><strong>Generated ${data.num_scenes} scenes</strong></p>
+                
+                <div class="scenes-list">
+                    ${data.scenes.map(scene => `
+                        <div class="scene-item">
+                            <div class="scene-number">Scene ${scene.scene_number}</div>
+                            <div>${scene.text}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <img src="/storyboard/${data.storyboard_file}" alt="Storyboard" class="storyboard-img">
+                
+                <a href="/storyboard/${data.storyboard_file}" download="${data.storyboard_file}" class="download-btn" style="text-decoration: none; color: white;">
+                    📥 Download Storyboard
+                </a>
+            `;
+            
+            resultContent.innerHTML = html;
+            result.classList.add('show');
+            result.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
