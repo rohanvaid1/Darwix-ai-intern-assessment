@@ -282,7 +282,20 @@
                     body: formData
                 });
                 
-                const data = await response.json();
+                // Check if response is OK
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server error (${response.status}): ${errorText.substring(0, 100)}`);
+                }
+                
+                // Try to parse as JSON
+                let data;
+                try {
+                    data = await response.json();
+                } catch (jsonError) {
+                    const text = await response.text();
+                    throw new Error('Server returned invalid JSON: ' + text.substring(0, 100));
+                }
                 
                 if (data.success) {
                     // Display results
@@ -291,6 +304,7 @@
                     alert('Error generating speech: ' + (data.error || 'Unknown error'));
                 }
             } catch (error) {
+                console.error('Full error:', error);
                 alert('Error: ' + error.message);
             } finally {
                 btn.disabled = false;
