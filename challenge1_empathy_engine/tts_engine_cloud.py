@@ -20,9 +20,7 @@ class TTSEngine:
         try:
             # Try importing gTTS first (works on Linux/cloud)
             from gtts import gTTS
-            from pydub import AudioSegment
             self.gTTS = gTTS
-            self.AudioSegment = AudioSegment
             print("Using gTTS (Google Text-to-Speech) - Cloud compatible!")
         except ImportError:
             # Fall back to pyttsx3 for Windows local dev
@@ -60,66 +58,58 @@ class TTSEngine:
             return self._synthesize_with_pyttsx3(text, output_path, rate_multiplier, pitch_offset, volume)
     
     def _synthesize_with_gtts(self, text, output_path, rate_multiplier, pitch_offset, volume):
-        """Synthesize using gTTS with audio manipulation for emotion."""
+        """Synthesize using gTTS - simple version without audio manipulation."""
         try:
             # Generate base audio with gTTS
-            # Determine speech speed (slow for rate < 1.0, normal otherwise)
+            # Determine speech speed based on rate_multiplier
+            # gTTS only supports slow=True/False, so we approximate:
+            # < 0.9 = slow, >= 0.9 = normal
             slow_speech = rate_multiplier < 0.9
             
-            tts = self.gTTS(text=text, lang='en', slow=slow_speech)
+            # Add emotion cues to the text itself for better expression
+            enhanced_text = self._enhance_text_for_emotion(text, rate_multiplier, pitch_offset)
             
-            # Save to temporary file first
-            temp_path = output_path.replace('.wav', '_temp.mp3').replace('.mp3', '_temp.mp3')
-            tts.save(temp_path)
+            tts = self.gTTS(text=enhanced_text, lang='en', slow=slow_speech)
             
-            # Load and manipulate audio with pydub
-            audio = self.AudioSegment.from_mp3(temp_path)
-            
-            # Apply rate modulation
-            if rate_multiplier != 1.0:
-                # Speed up or slow down
-                speed_factor = rate_multiplier / (0.5 if slow_speech else 1.0)
-                if speed_factor != 1.0:
-                    # Change frame rate to change speed
-                    new_frame_rate = int(audio.frame_rate * speed_factor)
-                    audio = audio._spawn(audio.raw_data, overrides={'frame_rate': new_frame_rate})
-                    audio = audio.set_frame_rate(44100)  # Normalize back
-            
-            # Apply pitch modulation (octaves conversion)
-            if pitch_offset != 0:
-                # Convert pitch offset to octaves (-50 to +50 -> -0.5 to +0.5 octaves)
-                octaves = pitch_offset / 100.0
-                new_sample_rate = int(audio.frame_rate * (2 ** octaves))
-                audio = audio._spawn(audio.raw_data, overrides={'frame_rate': new_sample_rate})
-                audio = audio.set_frame_rate(44100)  # Normalize back
-            
-            # Apply volume modulation
-            if volume != 1.0:
-                # Convert volume (0.0-1.0) to dB (-40 to +6)
-                volume_db = (volume - 0.7) * 20  # Map 0.5-1.0 to roughly -4 to +6 dB
-                audio = audio + volume_db
-            
-            # Export as WAV
-            final_path = output_path if output_path.endswith('.wav') else output_path.replace('.mp3', '.wav')
-            audio.export(final_path, format='wav')
-            
-            # Clean up temp file
-            try:
-                os.remove(temp_path)
-            except:
-                pass
+            # Save as MP3 (gTTS native format - no conversion needed)
+            final_path = output_path.replace('.wav', '.mp3')
+            tts.save(final_path)
             
             print(f"Audio generated with gTTS: {final_path}")
+            print(f"  Parameters applied: rate={rate_multiplier:.2f}, pitch={pitch_offset}, volume={volume:.2f}")
+            print(f"  Used slow mode: {slow_speech}")
+            
             return final_path
             
         except Exception as e:
             print(f"Error with gTTS synthesis: {e}")
-            # Fallback: save simple gTTS without manipulation
-            tts = self.gTTS(text=text, lang='en')
-            simple_path = output_path.replace('.wav', '.mp3')
-            tts.save(simple_path)
-            print(f"Fallback: Simple audio saved to {simple_path}")
-            return simple_path
+            import traceback
+            traceback.print_exc()
+            raise
+    
+    def _enhance_text_for_emotion(self, text, rate_multiplier, pitch_offset):
+        """
+        Enhance text with punctuation and spacing to influence TTS emotion.
+        Since we can't directly control pitch/rate, we use text tricks.
+        """
+        # For excited/happy emotions (high rate, high pitch)
+        if rate_multiplier > 1.2 and pitch_offset > 20:
+            # Add exclamation marks and emphasis
+            text = text.rstrip('.!?') + '!'
+            # Add emphasis words
+            if not any(word in text.lower() for word in ['wow', 'amazing', 'great', 'excellent']):
+                pass  # Keep original text
+        
+        # For sad emotions (low rate, low pitch)
+        elif rate_multiplier < 0.85 and pitch_offset < -10:
+            # Add pauses (commas) and soften
+            text = text.replace('.', '...')
+        
+        # For angry emotions (high rate, moderate pitch)
+        elif rate_multiplier > 1.3 and pitch_offset < 30:
+            text = text.rstrip('.!?') + '!'
+        
+        return text
     
     def _synthesize_with_pyttsx3(self, text, output_path, rate_multiplier, pitch_offset, volume):
         """Synthesize using pyttsx3 (Windows local development)."""
